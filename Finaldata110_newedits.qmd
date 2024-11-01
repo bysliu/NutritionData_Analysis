@@ -1,0 +1,173 @@
+---
+title: "Brain Food"
+format: html
+editor: visual
+---
+
+![](https://images.squarespace-cdn.com/content/v1/580a7cb9e3df2806e84bb687/f1d388e5-b1f6-40d7-b1b3-2f7410829b71/Untitled+design.jpg)
+
+# Feeding Your Brain
+
+Today's topic will be about knowing your food. The Dataset we will be looking at is sourced from the USDA website <https://fdc.nal.usda.gov/>. Variables include foods with their malnutrition, vitamins and minerals totaling 53 variables. There are 8000+ observations.
+
+I first took that dataset and made it a bit more into a manageable size taking 29 of the variables. I used mutate 3 times to create a new variables labeling each food to its respective level of macronutrient using the case_when. After that, I mutated once more to label each food item into a category, such as red meats, fish, nuts, and so on.
+
+I chose this topic to inform the general population of a different way to diet. People often think of a diet as something restricting, which is how many end up "failing" or "yo-yoing." Being a Trainer in the current fitness industry I am tired of people putting themselves through bad information and just want to guide and teach them the path of lasting success.
+
+```{r}
+library(tidyverse)
+#library(data.table)
+```
+
+```{r}
+#setwd("C:/Users/It's Me Betty/Documents/MC. Data 110")
+
+USDAa <- read_csv("food_nutrient_composition_USDA.csv",locale=locale(encoding="latin1"), show_col_types = FALSE ) #File had a charatcher that was not encoded properly, just this code allowed it to read into RStudio
+```
+
+```{r}
+#headers <- names(USDAa)
+#headers
+USDAb <- USDAa [, c("Shrt_Desc","Energ_Kcal","Water_(g)", "Ash_(g)", "Protein_(g)",  "Lipid_Tot_(g)",  "Carbohydrt_(g)","Fiber_TD_(g)", "Sugar_Tot_(g)", "Cholestrl_(mg)", "FA_Sat_(g)", "FA_Mono_(g)", "FA_Poly_(g)", "GmWt_1", "GmWt_Desc1", "GmWt_2", "GmWt_Desc2" , "Calcium_(mg)", "Magnesium_(mg)", "Potassium_(mg)", "Sodium_(mg)",  "Thiamin_(mg)", "Selenium_(µg)",   "Alpha_Carot_(µg)", "Beta_Carot_(µg)",  "Beta_Crypt_(µg)", "Lycopene_(µg)", "Vit_C_(mg)", "Vit_E_(mg)")]
+#sapply(USDAb, class)
+names(USDAb)[names(USDAb) == "Lipid_Tot_(g)"] <- "Fat_(g)" 
+#Lipid is a fancy way to say Fat
+
+colnames(USDAb) <- gsub("\\(|\\)", "", colnames(USDAb))
+#removing the () from orginal data headers
+```
+
+```{r}
+USDAd <- USDAb |>
+  mutate(Fat_Rating = case_when(
+    Fat_g == 0.00 & Fat_g <= 0.99 ~ "Fat-free",
+    Fat_g >= 1 & Fat_g <= 15.99 ~ "Low Fat",
+    Fat_g >= 16 & Fat_g <=22.99 ~ "Low Moderate Fat",
+    Fat_g >= 23 & Fat_g <=38.99 ~ " Moderate Fat",
+    Fat_g >= 39 & Fat_g <=55.99 ~ " Moderate High Fat",
+    Fat_g >= 56 & Fat_g <=69.99 ~ " High Fat",
+    Fat_g >= 70 & Fat_g <= 90.99 ~ "Really High Fat",
+    Fat_g >= 91 & Fat_g <= 100 ~ "All Fats",
+    TRUE ~ NA_character_  # default value if none of the conditions are met
+  )) |>
+  
+  mutate(Protein_rating = case_when(
+    Protein_g == 0.00 & Protein_g <= 0.99 ~ "Protein-free",
+    Protein_g >= 1 & Protein_g <= 15.99 ~ "Low Protein",
+    Protein_g >= 16 & Protein_g <=22.99 ~ "Low Moderate Protein",
+    Protein_g >= 23 & Protein_g <=38.99 ~ " Moderate Protein",
+    Protein_g >= 39 & Protein_g <=55.99 ~ " Moderate High Protein",
+    Protein_g >= 56 & Protein_g <=69.99 ~ " High Protein",
+    Protein_g >= 70 & Protein_g <= 90.99 ~ "Really High Protein",
+    Protein_g >= 91 & Protein_g <= 100 ~ "All Proteins",
+    TRUE ~ NA_character_  
+  )) |>
+  mutate(Carb_rating = case_when(
+    Carbohydrt_g == 0.00 & Carbohydrt_g <= 0.99 ~ "Carb-free",
+    Carbohydrt_g >= 1 & Carbohydrt_g <= 15.99 ~ "Low Carb",
+    Carbohydrt_g >= 16 & Carbohydrt_g <=22.99 ~ "Low Moderate Carb",
+    Carbohydrt_g >= 23 & Carbohydrt_g <=38.99 ~ " Moderate Carb",
+    Carbohydrt_g >= 39 & Carbohydrt_g <=55.99 ~ " Moderate High Carb",
+    Carbohydrt_g >= 56 & Carbohydrt_g <=69.99 ~ " High Carb",
+    Carbohydrt_g >= 70 & Carbohydrt_g <= 90.99 ~ "Really High Carb",
+    Carbohydrt_g >= 91 & Carbohydrt_g <= 100 ~ "All Carbs",
+
+    TRUE ~ NA_character_ 
+  )) 
+#scaling Macros to fit into "level"
+```
+
+```{r}
+USDAc <- USDAd |> 
+  
+  mutate(Category = case_when(
+    
+    grepl("bacon|bear|beef|bison|buffalo|caribou|elk|game|ham|lamb|moose|mutton|pork|veal|venison|wgyu", Shrt_Desc, ignore.case = TRUE) ~ "Red Meat",
+
+        grepl("chckn|chicken|chkn|duck|egg|emu|goose|grouse|guinea|ostrich|owl|pheasant|poultry|quail|squab|turkey", Shrt_Desc, ignore.case = TRUE) ~ "Poultry",    
+    
+    grepl("anchovy|bass|burbot|carp|caviar|cisco|cod|croaker|eel|fish|grouper|haddock|halibut|herring|lobster|ling|mackerel|mullet|pout|perch|pike|pompano|pollock|roe|sardine|salmon|scup|shad|shark|sheepshead|smelt|snapper|spot|sturgeon|sucker|trout|tuna|turbot|whale|whiting|yellowtail", Shrt_Desc, ignore.case = TRUE) ~ "Fish",
+    
+    grepl("abalone|clam|conch|crab|crayfish|frog|mussel|mussels|octopus|oyster|prawns|scallop|sea lion|seafood|seal|seaweed|shrimp|snail|squid|turtle|urchins|walrus|whelk", Shrt_Desc, ignore.case = TRUE) ~ "Seafood",
+    
+    grepl("butter|casein|cheese|cream|crm|dairy|de leche|dessert|ice cream|milk|queso|whey|yogurt", Shrt_Desc, ignore.case = TRUE) ~ "Dairy Product",
+  
+        grepl("natto|chickpea|edamame|acorns|almonds|beans|cowpeas|hummus|lentils|nut|nuts|peacans|peacan|pecan|pecans|peanuts|seed|seeds|sesame|soy|succotash|tofu|sunflower",Shrt_Desc, ignore.case = TRUE) ~ "Beans Nuts and seeds",
+    
+    grepl("seasoning|flakes|ground|pdr|powder|spice|spices|salt", Shrt_Desc, ignore.case = TRUE) ~ "Powered and Ground",
+    
+    grepl("apples|apple|artichokes|asparagus|apricots|avocados|bananas|brussels|chard|chicory|grns|okra|leaves|beets|chives|borage|dock|elderberries|kale|shallots|leeks|carrot|blackberries|blueberries|cabbage|cauliflower|broccoli|cloudberries|corn|cranberries|fungi|figs|grass|huckleberries|mushrooms|orange|pear|pepper|peppers|peas|onions|palm|parsley|parsnip|potato|pumpkin|rutabagas|spinach|pickles|plum|radishes|raspberries|squash|strawberries|sweet potato|taro|tomato|turnip|yam|winged|wasabi|grapes|grapefruit|guavas|jackfruit|jujube|kiwifruit|kumquats|limes|litchis|longans|mangos|melons|mulberries|nectarines|olives|papayas|passion|peaches|persimmons|plantains|prunes|pomegranates|cherries|dates|bamboo shoot|celery|chayote|dandelion|garlic|ginger|lettuce|lotus|pickle|fennel|nopal|pummelo|gourd|chervil|coriander|dill|marjoram|paprika|rosemary|saffron|basil|dill|mustard|thyme|capers|horseradish|rosemary", Shrt_Desc, ignore.case = TRUE) ~ "Veggie and Fruits",
+    
+    grepl("drsng|fat|lard|margarine|oil|shortening", Shrt_Desc, ignore.case = TRUE) ~ "Fats and Oils",
+    
+    grepl("ALCOHOLIC|WHISKEY", Shrt_Desc, ignore.case = TRUE) ~ "Alcoholic",
+    
+    grepl("baby|baby food|babyfood|formu|formula|inf|toddler", Shrt_Desc, ignore.case = TRUE) ~ "Baby Food",
+    
+     grepl("big daddy's|fast fd|popeyes|papa john's|pizza hut|little caesars|subway|kfc|digioro|domino's|chipotle|chick-fil-a|carl's jr|mcdonald's|wendy's|taco bell|burger king|fast foods", Shrt_Desc, ignore.case = TRUE) ~ "Fast Food",
+    
+    grepl("cracker barrel|on the border|carrabba's|olive garden|friday's|applebee's|denny's|restaurant", Shrt_Desc, ignore.case = TRUE) ~ "Restaurant",
+    
+    grepl("barbara's puffins|bear naked|breyers|campbell's|carl buddig|cascadian farm|cheez-it|franco-a|form bar|general mills|garderburger|GARDENBURGER|heinz|hot pockets|hormel|kashi|kellogg's|keebler|kraft|klondike|littl debbi|loma linda|louis rich|malt-o-meal|martha|murray|morningstar|mission|nabisco|nature's|path|oscar mayer|pace|pillsbury|prego|post|quaker|qkr|ralston|reddi|smart|worthington", Shrt_Desc, ignore.case =TRUE) ~ "Brands",
+    
+    grepl("arizona|beverage|brewed|carbonated|chili|coffee|cocacolate|drk|eggnog|gravy|honey|jams|preserves|jellies|juice|juc|lemonade|lipton|marmalade|mayonnaise|molasses|pepsico|punch juc|propel|sauce|soup|swanson|tea|v8|water|ELECTROLYTE|paste|extract|vinegar|nectar|puree", Shrt_Desc, ignore.case = TRUE) ~ "Liquid",
+
+    
+    grepl("amaranth|bagels|barley|bisuits|biscuits|cracker|phyllo|popevers|bread|cake|candies|chips|chocolate|cones|cookies|flr|cornmeal|crackers|croissants|croutons|danish|cereals|doughnuts|flrmix|frostings|granola|grits|lasagna|macaroni|millet|muffin|muffins|noodles|oat|oats|pancakes|pastry|pie|pizza|popcorn|potatoes|pretzels|puddings|quinoa|raviolo|rice|rolls|rye|shells|spaghetti|strudel|toast|tortillas|trail|waffle|waffles|wheat|VERMICELLI|zwieback", Shrt_Desc, ignore.case = TRUE) ~"Carb things",
+
+    grepl("bologna|bratwurst|kielbasa|liverwurst|rankfurter|sausage|yachtwurst", Shrt_Desc, ignore.case = TRUE) ~ "SAUSAGE",
+    
+    grepl("agave|cattail|cmdty|commodity|diabetes|frozen|gelatin|leavening|snack|sugars|syrup|sweeteners|vegetarian", Shrt_Desc, ignore.case = TRUE) ~ "Other",
+    
+    TRUE ~ NA_character_
+  ))
+#Giving eat item a Category to call home
+```
+
+```{r}
+write_csv(USDAc, file = "USDAc2nutr.csv")
+#save a new csv to load into Tableau
+```
+
+### Quick Statistical Visualization
+
+```{r}
+ggplot(USDAc, aes(x= Water_g))+
+  geom_boxplot()+
+  facet_wrap(~ Category)+
+  labs(title = "Hydrating Foods",
+       x = "Water content",
+       y = NULL) +
+  
+  theme_classic()+
+  theme(plot.title = element_text(face = "bold", hjust = .5, size = 18, color = "#08034f"),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        plot.background = element_rect(fill = "lightblue"),
+        axis.title.x = element_text(face = "bold", color = "#08034f"),
+        strip.text = element_text(color = "#000000", face = "bold"),)
+```
+
+Foods with a higher water content help keep you hydrated and usually come in lower-calorie options, making them ideal for volume eating! This boxplot shows how different foods fall into each category. Choosing hydrating foods like fruits and vegetables contributes to a happier, more sustainable diet. It's important to note that alcoholic beverages do not count toward hydration—alcohol is dehydrating and can actually increase your water needs. Sticking to water-rich foods and drinks like fruits, vegetables, and herbal teas will support your hydration goals effectively.
+
+# Main Tableau Visualization
+
+<https://public.tableau.com/views/EatWellLiveWell_17023329042230/Nutrition?:language=en-US&:display_count=n&:origin=viz_share_link>
+
+###### Below is a snapshot of the Tableau visualization.
+
+![](Final%20vizz%20screenshot.png)
+
+# An Ending Essay
+
+Incorporating foods rich in protein and fiber into your eating habits is a smart strategy for maintaining a healthy diet and managing weight. "Protein's ability to influence hormones that signal satiety to the brain is key in enhancing overall fullness" (Sutton). This makes meals rich in protein and fiber not only satisfying but also crucial in stabilizing blood sugar levels and reducing cravings for unhealthy snacks. Protein-rich foods, such as lean meats, fish, tofu, and legumes, are essential for building and repairing muscle, while fiber from fruits, vegetables, whole grains, and beans supports digestion and prolongs the feeling of fullness. By choosing meals that combine these two nutrients, you're not only ensuring prolonged satiety but also making nutritious choices that support your overall health and well-being.
+
+Mindful eating goes hand in hand with nutritional awareness, which is crucial when dining out. Having a good understanding of the macronutrients (such as protein, carbohydrates, and fats) in the foods you consume empowers you to make informed choices while still enjoying restaurant meals. By knowing the macros of your favorite dishes or ingredients, you can adjust your selections to align with your dietary goals. For instance, if you're aiming to maintain a high-protein, low-carb diet, you can opt for grilled chicken or fish paired with a side of steamed vegetables instead of carb-heavy options. This level of awareness allows you to relish your dining experience without derailing your progress.
+
+##### Research Source
+
+Sutton, B. G. (2022). *Nasm Essentials of Personal Fitness training*. Jones & Bartlett Learning.
+
+###### 
+
+###### 
